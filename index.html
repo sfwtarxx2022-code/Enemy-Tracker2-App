@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة الأسماء التفاعلية</title>
+    <style>
+        /* التنسيق الأساسي واللون السيبراني */
+        body {
+            background: #000;
+            color: cyan;
+            text-align: center;
+            font-family: "Tahoma", sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            /* تحديد اتجاه الصفحة بالكامل من اليمين لليسار */
+            direction: rtl; 
+        }
+        h2 {
+            margin-top: 20px;
+            color: cyan;
+            text-shadow: 0 0 10px cyan;
+        }
+        
+        /* 1. عناصر التحكم والأزرار (شاشة الإضافة) */
+        .controls {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background: cyan;
+            color: black;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 5px; 
+            font-size: 16px; 
+        }
+        button:hover {
+            background: #0ff;
+            box-shadow: 0 0 15px cyan;
+        }
+        /* تنسيق زر الحذف */
+        #deleteButton {
+            background-color: darkred;
+            color: white;
+            box-shadow: 0 0 10px red;
+        }
+        #deleteButton:hover {
+            background-color: red;
+            box-shadow: 0 0 20px red;
+        }
+
+        /* تنسيق زر التعديل */
+        #editButton {
+            background-color: darkgoldenrod;
+            color: white;
+            box-shadow: 0 0 10px yellow;
+        }
+        #editButton:hover {
+            background-color: gold;
+            box-shadow: 0 0 20px yellow;
+            color: black;
+        }
+        
+        /* 2. حقول إدخال الاسم والحذف والتعديل (شاشة الإضافة) */
+        #imageNameInput, #deleteNameInput, .edit-input {
+            padding: 10px;
+            margin: 5px;
+            width: 250px;
+            border: 2px solid cyan;
+            background: #111;
+            color: white;
+            border-radius: 6px;
+            text-align: right;
+            direction: rtl;
+            box-shadow: 0 0 5px cyan;
+            font-size: 16px; 
+        }
+
+        /* تنسيق زر إضافة الاسم فقط */
+        #addNameOnlyButton {
+            background-color: #004d40; 
+            color: #b2ebf2;
+        }
+        #addNameOnlyButton:hover {
+            background-color: #00796b;
+            box-shadow: 0 0 15px #b2ebf2;
+        }
+        
+        /* 3. حاوية شبكة الصور - الافتراضي (لأكثر من 4 بطاقات) */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 120px); 
+            gap: 25px;
+            justify-content: center;
+            margin: 40px auto;
+            max-width: 900px;
+        }
+
+        /* 4. بطاقة الصورة (Card) - الأبعاد الافتراضية */
+        .card {
+            position: relative;
+            width: 120px;
+            height: 205px; 
+            cursor: pointer;
+            border: 2px solid cyan;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 20px cyan;
+            transition: transform 0.3s, box-shadow 0.3s, width 0.5s, height 0.5s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+        }
+
+        /* الصورة داخل البطاقة العادية */
+        .card:not(.text-card) img {
+            width: 100%;
+            height: 160px; 
+            object-fit: cover;
+            filter: grayscale(30%) contrast(120%) brightness(90%);
+            transition: height 0.5s;
+        }
+
+        /* تنسيق البطاقة النصية فقط (البطاقة نفسها) */
+        .card.text-card {
+            background-color: #111;
+            align-items: center;
+            justify-content: center; 
+            padding: 0;
+        }
+        .card.text-card .person-name {
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center;
+            white-space: normal; 
+            word-wrap: break-word; 
+            border: none; 
+            font-size: 16px;
+            padding: 5px;
+            margin: 0;
+            background-color: transparent; 
+        }
+        
+        /* *** تطبيق أحجام العرض التكيفية (حجم الخط في البطاقة) *** */
+        
+        /* الحالة الجديدة: 4 بطاقات (أكبر قليلاً من الافتراضي) */
+        .container.four-cards-view { 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px; 
+            max-width: 850px; 
+        }
+        .container.four-cards-view .card { 
+            width: 180px; 
+            height: 280px; 
+        } 
+        .container.four-cards-view .card:not(.text-card) img { 
+            height: 220px; 
+        }
+        .container.four-cards-view .card .person-name { 
+            font-size: 16px; 
+        }
+        .container.four-cards-view .card.text-card .person-name { 
+            font-size: 26px; 
+        }
+
+        /* تنسيق خاص لـ 3 صور/بطاقات */
+        .container.three-cards-view { 
+            grid-template-columns: repeat(3, minmax(220px, 1fr)); 
+            gap: 50px; 
+            max-width: 800px; 
+        }
+        .container.three-cards-view .card { 
+            width: 220px; 
+            height: 350px; 
+        } 
+        .container.three-cards-view .card:not(.text-card) img { 
+            height: 280px; 
+        }
+        .container.three-cards-view .card .person-name { 
+            display: block; 
+            font-size: 18px; 
+        }
+        .container.three-cards-view .card.text-card .person-name { 
+            font-size: 32px; 
+        } 
+
+        /* تنسيق خاص لـ 2 صور/بطاقات */
+        .container.two-cards-view { 
+            grid-template-columns: repeat(2, minmax(300px, 1fr)); 
+            gap: 60px; 
+            max-width: 700px; 
+        }
+        .container.two-cards-view .card { 
+            width: 300px; 
+            height: 470px; 
+        } 
+        .container.two-cards-view .card:not(.text-card) img { 
+            height: 380px; 
+        }
+        .container.two-cards-view .card .person-name { 
+            display: block; 
+            font-size: 20px; 
+        }
+        .container.two-cards-view .card.text-card .person-name { 
+            font-size: 44px; 
+        }
+
+        /* التنسيق الأكبر والأكثر بروزاً لصورة/بطاقة واحدة فقط */
+        .container.single-card-view { 
+            grid-template-columns: 1fr; 
+            max-width: 500px; 
+            margin: 50px auto; 
+        }
+        .container.single-card-view .card { 
+            width: 480px; 
+            height: 650px; 
+        } 
+        .container.single-card-view .card:not(.text-card) img { 
+            height: 520px; 
+        }
+        .container.single-card-view .card .person-name { 
+            display: block; 
+            font-size: 26px; 
+        }
+        .container.single-card-view .card.text-card .person-name { 
+            font-size: 60px; 
+        }
+
+
+        /* 5. اسم الشخص أسفل الصورة */
+        .person-name {
+            background-color: #000;
+            color: cyan;
+            font-size: 14px;
+            padding: 5px 0;
+            text-align: center;
+            white-space: normal; 
+            overflow: visible; 
+            text-overflow: clip; 
+            border-top: 2px solid cyan;
+            font-weight: bold;
+            transition: font-size 0.5s;
+            line-height: 1.2; 
+        }
+        .card:not(.text-card) .person-name {
+            position: relative; 
+            padding: 5px 0;
+            margin: 0;
+            background-color: #000;
+            border-top: 2px solid cyan;
+        }
+
+        /* 6. علامة X التفاعلية */
+        .x-mark {
+            position: absolute;
+            top: 45%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 90px;
+            font-weight: bold;
+            color: red;
+            opacity: 0;
+            transition: opacity 0.3s, font-size 0.5s;
+            pointer-events: none;
+            text-shadow: 0 0 15px black;
+        }
+        .card.active .x-mark {
+            opacity: 1;
+        }
+        
+        /* 7. إخفاء الواجهة */
+        .hidden {
+            display: none;
+        }
+
+        /* --- تنسيقات واجهة التفاصيل الجديدة (Detail Screen) --- */
+        #detailScreen {
+            padding: 40px 20px;
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #000;
+            border: 2px solid cyan;
+            border-radius: 10px;
+            box-shadow: 0 0 25px cyan;
+            font-size: 18px; 
+        }
+        #detailScreen h2 {
+            margin-bottom: 30px;
+            font-size: 32px; 
+            color: #0ff;
+        }
+        .detail-row {
+            display: flex;
+            flex-direction: row-reverse; 
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 5px 0;
+            border-bottom: 1px solid #005555; 
+        }
+        .detail-row label {
+            text-align: right; 
+            flex-basis: 35%; 
+            font-weight: bold;
+            color: cyan;
+            font-size: 20px; 
+        }
+        
+        /* التحكم في حجم الخط لحقول الإدخال والنصوص الكبيرة (Input & Textarea) */
+        .detail-row input, 
+        .detail-row textarea {
+            flex-basis: 60%; 
+            padding: 10px; 
+            border: 1px solid #00aaaa;
+            background: #000;
+            color: white;
+            border-radius: 4px;
+            font-size: 20px !important; 
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .detail-row textarea {
+            resize: vertical;
+            min-height: 100px; 
+        }
+
+        /* تنسيق وضع القراءة (Read-Only) - التأكيد على حجم الخط الكبير والمحاذاة */
+        .detail-row input[readonly], 
+        .detail-row textarea[readonly] {
+            border: none; 
+            background: transparent; 
+            color: #0ff; 
+            box-shadow: none;
+            cursor: default;
+            
+            text-align: right !important; 
+            direction: rtl !important; 
+            font-size: 20px !important; 
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        /* أزرار واجهة التفاصيل */
+        #saveDetailsButton {
+            background-color: #004d40;
+            color: #b2ebf2;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #saveDetailsButton:hover {
+            background-color: #00796b;
+        }
+        #backToViewButton {
+            background-color: #555;
+            color: white;
+            font-size: 18px;
+        }
+        #backToViewButton:hover {
+            background-color: #888;
+        }
+        /* زر التعديل الجديد */
+        #editDetailsButton {
+            background-color: darkgoldenrod;
+            color: white;
+            font-size: 18px;
+        }
+        #editDetailsButton:hover {
+            background-color: gold;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="addScreen">
+        <h2>واجهة إضافة صور الاعداء "القائمة السوداء"</h2>
+        <div class="controls">
+            <input type="text" id="imageNameInput" placeholder="أدخل اسم الشخص">
+            
+            <input type="file" id="fileInput" accept="image/*" hidden>
+            <button onclick="document.getElementById('fileInput').click()">➕ أضف صورة</button>
+
+            <button id="addNameOnlyButton" onclick="addNameOnly()">➕ أضف اسم فقط</button>
+            
+            <button id="deleteButton" onclick="toggleDeleteInput()">➖ حذف صورة</button>
+
+            <button id="editButton" onclick="toggleEditInput()">✏️ تعديل اسم</button>
+
+            <div id="deleteControl" class="hidden" style="margin-top: 10px;">
+                <input type="text" id="deleteNameInput" placeholder="اكتب اسم الشخص للحذف">
+                <button onclick="deleteCardByName()" style="background-color: red;">تأكيد الحذف</button>
+            </div>
+
+            <div id="editControl" class="hidden" style="margin-top: 10px;">
+                <input type="text" id="oldNameInput" class="edit-input" placeholder="الاسم القديم">
+                <input type="text" id="newNameInput" class="edit-input" placeholder="الاسم الجديد">
+                <button onclick="editCardName()" style="background-color: gold; color: black;">تأكيد التعديل</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewScreen" class="hidden">
+        <h2>قائمة صور الاعداء</h2>
+        <div class="container" id="viewContainer"></div>
+    </div>
+
+    <div id="detailScreen" class="hidden">
+        <h2 id="detailCardName">تفاصيل: [اسم الشخص]</h2>
+        
+        <div class="detail-row">
+            <label for="fullName">الاسم الثلاثي:</label>
+            <input type="text" id="fullName" placeholder="أدخل الاسم الثلاثي">
+        </div>
+        
+        <div class="detail-row">
+            <label for="codename">الاسم الحركي:</label>
+            <input type="text" id="codename" placeholder="أدخل الاسم الحركي">
+        </div>
+
+        <div class="detail-row">
+            <label for="ageOrBirth">المواليد/العمر:</label>
+            <input type="text" id="ageOrBirth" placeholder="سنة المواليد أو العمر">
+        </div>
+
+        <div class="detail-row">
+            <label for="location">الموقع:</label>
+            <input type="text" id="location" placeholder="أدخل الموقع">
+        </div>
+
+        <div class="detail-row">
+            <label for="notes">ملاحظات أخرى:</label>
+            <textarea id="notes" placeholder="ملاحظات مهمة حول الشخص"></textarea>
+        </div>
+
+        <button id="saveDetailsButton" onclick="saveDetails()">حفظ التفاصيل</button>
+        <button id="editDetailsButton" class="hidden" onclick="enterEditMode()">✏️ تعديل التفاصيل</button>
+        <button id="backToViewButton" onclick="hideDetails()">العودة للقائمة</button>
+    </div>
+
+
+    <script>
+        // المتغيرات لربط عناصر HTML بالجافاسكريبت
+        const addScreen = document.getElementById("addScreen");
+        const viewScreen = document.getElementById("viewScreen");
+        const viewContainer = document.getElementById("viewContainer");
+        const fileInput = document.getElementById("fileInput");
+        const imageNameInput = document.getElementById("imageNameInput"); 
+        
+        const deleteControl = document.getElementById("deleteControl");
+        const deleteNameInput = document.getElementById("deleteNameInput"); 
+
+        const editControl = document.getElementById("editControl");
+        const oldNameInput = document.getElementById("oldNameInput");
+        const newNameInput = document.getElementById("newNameInput");
+        
+        // متغيرات واجهة التفاصيل
+        const detailScreen = document.getElementById("detailScreen");
+        const detailCardName = document.getElementById("detailCardName");
+        const fullNameInput = document.getElementById("fullName");
+        const codenameInput = document.getElementById("codename");
+        const ageOrBirthInput = document.getElementById("ageOrBirth");
+        const locationInput = document.getElementById("location");
+        const notesInput = document.getElementById("notes");
+        
+        const saveDetailsButton = document.getElementById("saveDetailsButton");
+        const editDetailsButton = document.getElementById("editDetailsButton");
+
+        const detailInputs = [fullNameInput, codenameInput, ageOrBirthInput, locationInput, notesInput];
+
+        const STORAGE_KEY = 'enemy_list_data'; 
+        const DETAIL_STORAGE_KEY = 'enemy_details_data'; 
+        
+        let currentEditingName = null; 
+
+        /* ----------------------------------
+         * دوال التحكم في العرض والحفظ
+         * ---------------------------------- */
+        
+        // دالة تحميل وحفظ التفاصيل
+        function loadDetails() {
+            const details = localStorage.getItem(DETAIL_STORAGE_KEY);
+            return details ? JSON.parse(details) : {};
+        }
+
+        function saveDetailsData(details) {
+            localStorage.setItem(DETAIL_STORAGE_KEY, JSON.stringify(details));
+        }
+
+        function updateViewSize() {
+            const cardCount = viewContainer.children.length;
+            
+            // إزالة جميع أنماط العرض التكيفية
+            viewContainer.classList.remove('single-card-view', 'two-cards-view', 'three-cards-view', 'four-cards-view');
+            
+            // تطبيق الأنماط بناءً على عدد البطاقات
+            if (cardCount === 1) {
+                viewContainer.classList.add('single-card-view');
+            } else if (cardCount === 2) {
+                viewContainer.classList.add('two-cards-view');
+            } else if (cardCount === 3) {
+                viewContainer.classList.add('three-cards-view');
+            } else if (cardCount === 4) {
+                viewContainer.classList.add('four-cards-view');
+            }
+        }
+
+        function saveData() {
+            const cards = viewContainer.querySelectorAll('.card');
+            const dataToSave = [];
+
+            cards.forEach(card => {
+                const nameElement = card.querySelector('.person-name');
+                const isTextCard = card.classList.contains('text-card');
+                
+                let src = '';
+                if (!isTextCard) {
+                    const imgElement = card.querySelector('img');
+                    if (imgElement) {
+                        src = imgElement.src;
+                    }
+                }
+                
+                dataToSave.push({
+                    src: src, 
+                    name: nameElement.textContent,
+                    active: card.classList.contains('active')
+                });
+            });
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+            updateViewSize(); 
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                viewContainer.innerHTML = '';
+                const parsedData = JSON.parse(savedData);
+                
+                parsedData.forEach(item => {
+                    if (item.src) {
+                        addCard(item.src, item.name, item.active, false); 
+                    } else {
+                        addNameCard(item.name, item.active, false);
+                    }
+                });
+
+                if (parsedData.length > 0) {
+                    showViewScreen();
+                } else {
+                    showAddScreen();
+                }
+            }
+            updateViewSize(); 
+        }
+
+        function showAddScreen() {
+            viewScreen.classList.add("hidden");
+            detailScreen.classList.add("hidden"); 
+            addScreen.classList.remove("hidden");
+        }
+
+        function showViewScreen() {
+            addScreen.classList.add("hidden");
+            detailScreen.classList.add("hidden"); 
+            viewScreen.classList.remove("hidden");
+        }
+        
+        // دوال واجهة التفاصيل
+
+        function setDetailMode(mode) {
+            if (mode === 'edit') {
+                detailInputs.forEach(input => input.removeAttribute('readonly'));
+                saveDetailsButton.classList.remove('hidden');
+                editDetailsButton.classList.add('hidden');
+            } else { // view mode
+                detailInputs.forEach(input => input.setAttribute('readonly', 'readonly'));
+                saveDetailsButton.classList.add('hidden');
+                editDetailsButton.classList.remove('hidden');
+            }
+        }
+
+        function showDetails(name) {
+            currentEditingName = name;
+            const details = loadDetails();
+            const personDetails = details[name] || {};
+
+            // تحديث العناوين وحقول الإدخال
+            detailCardName.textContent = `تفاصيل: ${name}`;
+            fullNameInput.value = personDetails.fullName || '';
+            codenameInput.value = personDetails.codename || '';
+            ageOrBirthInput.value = personDetails.ageOrBirth || '';
+            locationInput.value = personDetails.location || '';
+            notesInput.value = personDetails.notes || '';
+
+            // تحديد الوضع: إذا كانت التفاصيل فارغة، ابدأ بوضع التعديل. وإلا، ابدأ بوضع العرض.
+            const hasDetails = Object.values(personDetails).some(val => val && val.trim() !== '');
+            setDetailMode(hasDetails ? 'view' : 'edit');
+
+            // التبديل بين الشاشات
+            viewScreen.classList.add("hidden");
+            addScreen.classList.add("hidden");
+            detailScreen.classList.remove("hidden");
+        }
+
+        function enterEditMode() {
+            setDetailMode('edit');
+        }
+
+        function hideDetails() {
+            showViewScreen();
+        }
+
+        function saveDetails() {
+            if (!currentEditingName) return;
+
+            const details = loadDetails();
+            details[currentEditingName] = {
+                fullName: fullNameInput.value.trim(),
+                codename: codenameInput.value.trim(),
+                ageOrBirth: ageOrBirthInput.value.trim(),
+                location: locationInput.value.trim(),
+                notes: notesInput.value.trim()
+            };
+
+            saveDetailsData(details);
+            
+            // التبديل إلى وضع العرض بعد الحفظ
+            setDetailMode('view');
+        }
+
+        /* ----------------------------------
+         * دوال إضافة، حذف، وتعديل البطاقات 
+         * ---------------------------------- */
+
+        function addCardClickListeners(card, name) {
+            // النقر الفردي (لـ X)
+            card.addEventListener("click", () => {
+                card.classList.toggle("active");
+                saveData(); 
+            });
+            // النقر المزدوج (للانتقال لصفحة التفاصيل)
+            card.addEventListener("dblclick", (e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                showDetails(name);
+            });
+        }
+        
+        // دالة إنشاء بطاقة تحمل صورة
+        function addCard(src, name, isActive = false, shouldSave = true) {
+            const card = document.createElement("div");
+            card.classList.add("card");
+            
+            if (isActive) {
+                card.classList.add("active");
+            }
+            
+            card.innerHTML = `
+                <img src="${src}" alt="${name}">
+                <div class="x-mark">✘</div>
+                <div class="person-name">${name}</div>
+            `;
+            viewContainer.appendChild(card);
+
+            addCardClickListeners(card, name);
+            
+            if (shouldSave) {
+                saveData(); 
+            }
+        }
+
+        // دالة إنشاء بطاقة تحمل اسم فقط
+        function addNameCard(name, isActive = false, shouldSave = true) {
+            const card = document.createElement("div");
+            card.classList.add("card", "text-card"); 
+            
+            if (isActive) {
+                card.classList.add("active");
+            }
+            
+            card.innerHTML = `
+                <div class="x-mark">✘</div>
+                <div class="person-name">${name}</div>
+            `;
+            viewContainer.appendChild(card);
+
+            addCardClickListeners(card, name);
+            
+            if (shouldSave) {
+                saveData(); 
+            }
+        }
+        
+        // دالة زر إضافة الاسم فقط
+        function addNameOnly() {
+            const personName = imageNameInput.value.trim();
+
+            if (!personName) {
+                alert("الرجاء إدخال اسم الشخص أولاً.");
+                return;
+            }
+
+            addNameCard(personName);
+            imageNameInput.value = ""; 
+            showViewScreen();
+        }
+
+        function toggleDeleteInput() {
+            editControl.classList.add("hidden"); 
+            deleteControl.classList.toggle("hidden");
+            if (!deleteControl.classList.contains("hidden")) {
+                deleteNameInput.focus();
+            }
+        }
+        
+        function toggleEditInput() {
+            deleteControl.classList.add("hidden"); 
+            editControl.classList.toggle("hidden");
+            if (!editControl.classList.contains("hidden")) {
+                oldNameInput.focus();
+            }
+        }
+
+        function deleteCardByName() {
+            const nameToDelete = deleteNameInput.value.trim();
+            if (!nameToDelete) {
+                alert("الرجاء إدخال اسم الشخص المراد حذفه.");
+                return;
+            }
+
+            const cards = viewContainer.querySelectorAll('.card');
+            let foundAndDeleted = false;
+
+            for (let i = cards.length - 1; i >= 0; i--) {
+                const card = cards[i];
+                const nameElement = card.querySelector('.person-name');
+                if (nameElement.textContent.trim() === nameToDelete) {
+                    card.remove();
+                    foundAndDeleted = true;
+                }
+            }
+
+            if (foundAndDeleted) {
+                // حذف التفاصيل المخزنة أيضاً
+                const details = loadDetails();
+                delete details[nameToDelete];
+                saveDetailsData(details);
+
+                saveData(); 
+                alert(`تم حذف جميع بطاقات الشخص "${nameToDelete}" وتفاصيله.`);
+            } else {
+                alert(`لم يتم العثور على بطاقة بالاسم "${nameToDelete}".`);
+            }
+            
+            deleteNameInput.value = "";
+            deleteControl.classList.add("hidden");
+        }
+
+        function editCardName() {
+            const oldName = oldNameInput.value.trim();
+            const newName = newNameInput.value.trim();
+
+            if (!oldName || !newName) {
+                alert("الرجاء إدخال الاسم القديم والاسم الجديد.");
+                return;
+            }
+            
+            const cards = viewContainer.querySelectorAll('.card');
+            let foundAndEdited = false;
+            
+            // 1. تعديل التفاصيل المخزنة (قبل تعديل الاسم في البطاقة)
+            const details = loadDetails();
+            if (details[oldName]) {
+                details[newName] = details[oldName];
+                delete details[oldName];
+                saveDetailsData(details);
+            }
+            
+            // 2. تعديل الاسم في البطاقات
+            cards.forEach(card => {
+                const nameElement = card.querySelector('.person-name');
+                if (nameElement.textContent.trim() === oldName) {
+                    nameElement.textContent = newName; 
+                    // تحديث مستمع النقر المزدوج للبطاقة لتأخذ الاسم الجديد
+                    const newCard = card.cloneNode(true);
+                    card.parentNode.replaceChild(newCard, card);
+                    addCardClickListeners(newCard, newName);
+                    
+                    foundAndEdited = true;
+                }
+            });
+
+            if (foundAndEdited) {
+                saveData(); 
+                alert(`تم تعديل اسم "${oldName}" إلى "${newName}".`);
+            } else {
+                alert(`لم يتم العثور على شخص بالاسم القديم "${oldName}".`);
+            }
+            
+            oldNameInput.value = "";
+            newNameInput.value = "";
+            editControl.classList.add("hidden"); 
+        }
+
+
+        // معالج حدث اختيار الملف (لإضافة صورة جديدة)
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            const personName = imageNameInput.value.trim() || "غير معروف";
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    addCard(e.target.result, personName); 
+                    imageNameInput.value = ""; 
+                    showViewScreen();
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = null; 
+        });
+
+        // التنقل السريع عبر لوحة المفاتيح
+        document.addEventListener("keydown", (e) => {
+            if (e.ctrlKey && e.code === "KeyX") {
+                e.preventDefault(); 
+                showAddScreen();
+            }
+            if (e.ctrlKey && e.code === "KeyZ") {
+                e.preventDefault();
+                showViewScreen();
+            }
+        });
+
+        // تحميل البيانات عند بدء تشغيل الصفحة
+        window.onload = loadData; 
+    </script>
+</body>
+</html>
